@@ -1,6 +1,8 @@
 class ValueRef(object):
     def prepare_to_store(self, storage):
-        pass
+        err_msg = "{classname}.{methodname} must be implemented".format(classname=str(self.__class__),
+                                                                        methodname='_get()')
+        raise NotImplementedError(err_msg)
 
     @staticmethod
     def referent_to_string(referent):
@@ -30,6 +32,7 @@ class ValueRef(object):
 
 
 class LogicalBase(object):
+    err_msg = "{classname}.{methodname} must be implemented"
     node_ref_class = None
     value_ref_class = ValueRef
 
@@ -45,6 +48,15 @@ class LogicalBase(object):
         self._tree_ref = self.node_ref_class(
             address=self._storage.get_root_address())
 
+    def _get(self, node, key):
+        raise NotImplementedError(self.err_msg.format(classname=str(self.__class__), methodname='_get()'))
+
+    def _insert(self, node, key, value_ref):
+        raise NotImplementedError(self.err_msg.format(classname=str(self.__class__), methodname='_insert()'))
+
+    def _delete(self, node, key):
+        raise NotImplementedError(self.err_msg.format(classname=str(self.__class__), methodname='_delete()'))
+
     def get(self, key):
         if not self._storage.locked:
             self._refresh_tree_ref()
@@ -53,14 +65,12 @@ class LogicalBase(object):
     def set(self, key, value):
         if self._storage.lock():
             self._refresh_tree_ref()
-        self._tree_ref = self._insert(
-            self._follow(self._tree_ref), key, self.value_ref_class(value))
+        self._tree_ref = self._insert(self._follow(self._tree_ref), key, self.value_ref_class(value))
 
     def pop(self, key):
         if self._storage.lock():
             self._refresh_tree_ref()
-        self._tree_ref = self._delete(
-            self._follow(self._tree_ref), key)
+        self._tree_ref = self._delete(self._follow(self._tree_ref), key)
 
     def _follow(self, ref):
         return ref.get(self._storage)

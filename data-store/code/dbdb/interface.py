@@ -1,11 +1,11 @@
-from dbdb.binary_tree import BinaryTree
-from dbdb.physical import Storage
+from .binary_tree import BinaryTree
+from .physical import Storage
 
 
 class DBDB(object):
 
-    def __init__(self, f):
-        self._storage = Storage(f)
+    def __init__(self, dbfile):
+        self._storage = Storage(dbfile)
         self._tree = BinaryTree(self._storage)
 
     def _assert_not_closed(self):

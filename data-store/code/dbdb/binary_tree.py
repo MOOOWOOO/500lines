@@ -1,7 +1,7 @@
 import pickle
 
 
-from dbdb.logical import LogicalBase, ValueRef
+from .logical import LogicalBase, ValueRef
 
 
 class BinaryNode(object):

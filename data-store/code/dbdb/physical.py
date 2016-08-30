@@ -13,26 +13,26 @@ import portalocker
 
 
 class Storage(object):
-    SUPERBLOCK_SIZE = 4096
-    INTEGER_FORMAT = "!Q"
-    INTEGER_LENGTH = 8
+    superblock_size = 4096
+    integer_format = "!Q"
+    integer_length = 8
 
-    def __init__(self, f):
-        self._f = f
+    def __init__(self, dbfile):
+        self._dbfile = dbfile
         self.locked = False
         self._ensure_superblock()
 
     def _ensure_superblock(self):
         self.lock()
         self._seek_end()
-        end_address = self._f.tell()
-        if end_address < self.SUPERBLOCK_SIZE:
-            self._f.write(b'\x00' * (self.SUPERBLOCK_SIZE - end_address))
+        end_address = self._dbfile.tell()
+        if end_address < self.superblock_size:
+            self._dbfile.write(b'\x00' * (self.superblock_size - end_address))
         self.unlock()
 
     def lock(self):
         if not self.locked:
-            portalocker.lock(self._f, portalocker.LOCK_EX)
+            portalocker.lock(self._dbfile, portalocker.LOCK_EX)
             self.locked = True
             return True
         else:
@@ -40,49 +40,49 @@ class Storage(object):
 
     def unlock(self):
         if self.locked:
-            self._f.flush()
-            portalocker.unlock(self._f)
+            self._dbfile.flush()
+            portalocker.unlock(self._dbfile)
             self.locked = False
 
     def _seek_end(self):
-        self._f.seek(0, os.SEEK_END)
+        self._dbfile.seek(0, os.SEEK_END)
 
     def _seek_superblock(self):
-        self._f.seek(0)
+        self._dbfile.seek(0)
 
     def _bytes_to_integer(self, integer_bytes):
-        return struct.unpack(self.INTEGER_FORMAT, integer_bytes)[0]
+        return struct.unpack(self.integer_format, integer_bytes)[0]
 
     def _integer_to_bytes(self, integer):
-        return struct.pack(self.INTEGER_FORMAT, integer)
+        return struct.pack(self.integer_format, integer)
 
     def _read_integer(self):
-        return self._bytes_to_integer(self._f.read(self.INTEGER_LENGTH))
+        return self._bytes_to_integer(self._dbfile.read(self.integer_length))
 
     def _write_integer(self, integer):
         self.lock()
-        self._f.write(self._integer_to_bytes(integer))
+        self._dbfile.write(self._integer_to_bytes(integer))
 
     def write(self, data):
         self.lock()
         self._seek_end()
-        object_address = self._f.tell()
+        object_address = self._dbfile.tell()
         self._write_integer(len(data))
-        self._f.write(data)
+        self._dbfile.write(data)
         return object_address
 
     def read(self, address):
-        self._f.seek(address)
+        self._dbfile.seek(address)
         length = self._read_integer()
-        data = self._f.read(length)
+        data = self._dbfile.read(length)
         return data
 
     def commit_root_address(self, root_address):
         self.lock()
-        self._f.flush()
+        self._dbfile.flush()
         self._seek_superblock()
         self._write_integer(root_address)
-        self._f.flush()
+        self._dbfile.flush()
         self.unlock()
 
     def get_root_address(self):
@@ -92,8 +92,8 @@ class Storage(object):
 
     def close(self):
         self.unlock()
-        self._f.close()
+        self._dbfile.close()
 
     @property
     def closed(self):
-        return self._f.closed
+        return self._dbfile.closed

@@ -1,6 +1,6 @@
 import os
 
-from dbdb.interface import DBDB
+from .interface import DBDB
 
 
 __all__ = ['DBDB', 'connect']
